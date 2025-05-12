@@ -8,6 +8,26 @@
 #ifndef PATH_MAX
 #endif
 
+int count_files(const char *path) {
+  DIR *dir = opendir(path);
+  if (dir == NULL) {
+    perror("opendir failed");
+    return -1;
+  }
+
+  int count = 0;
+  struct dirent *entry;
+
+  while ((entry = readdir(dir)) != NULL) {
+    if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+      count++;
+    }
+  }
+
+  closedir(dir);
+  return count;
+}
+
 void process_make_command(const char *watched_path) {
   printf("Executing mp3forme in: %s\n", watched_path);
   if (chdir(watched_path)) {
@@ -39,8 +59,18 @@ void process_move_command(const char *watched_path) {
 
 void process_clean_command() {
   printf("Cleaning target directories\n");
-  system("rm /home/kenma/personal/AJATT/聴聞/*");
-  system("rm /home/kenma/personal/AJATT/共有/*");
+  char *target[] = {"/home/kenma/personal/AJATT/聴聞",
+                    "/home/kenma/personal/AJATT/共有"};
+
+  for (int i = 0; i < 2; i++) {
+    if (count_files(target[i]) > 0) {
+      char cmd[256];
+      snprintf(cmd, sizeof(cmd), "rm %s/*", target[i]);
+      system(cmd);
+    } else {
+      printf("Empty directory [%s]\n", target[i]);
+    }
+  }
 }
 
 int main(int argc, char *argv[]) {
